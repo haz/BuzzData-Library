@@ -3,9 +3,10 @@ import urllib, urllib2, json
 
 class API:
     def call(self, url, getparams, postparams):
+        
         url += "/?%s" % urllib.urlencode(getparams)
         post = urllib.urlencode(postparams)
-        #post = "&".join(["%s=%s" % (pair[0], pair[1]) for pair in params.items()])
+        
         try:
             if '' == post:
                 return json.load(urllib2.urlopen(url))
@@ -43,14 +44,26 @@ class DataRoom(API):
         if self.api:
             params['api_key'] = self.api
         url = "https://buzzdata.com/api/%s/%s/list_datafiles" % (str(self.user), self.dataroom)
-        return self.get(url, params)        
+        return self.get(url, params)
     
     def __str__(self):
         return self.dataroom
     
     def __repr__(self):
         return self.__str__()
+
+class DataFile(DataRoom):
+    def __init__(self, user, dataroom, uuid, api = None):
+        DataRoom.__init__(self, user, dataroom, api)
+        self.uuid = uuid
     
+    def history(self):
+        params = {}
+        if self.api:
+            params['api_key'] = self.api
+        url = "https://buzzdata.com/api/data_files/%s/history" % self.uuid
+        return self.get(url, params)
+
 class User(API):
     def __init__(self, user, api = None):
         self.user = user
@@ -61,7 +74,7 @@ class User(API):
         if self.api:
             params['api_key'] = self.api
         url = "https://buzzdata.com/api/%s/datasets/list" % self.user
-        return self.get(url, params)     
+        return self.get(url, params)
     
     def __str__(self):
         return self.user
