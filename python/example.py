@@ -1,4 +1,6 @@
 
+import os
+
 from buzzdata import *
 
 #########
@@ -69,6 +71,50 @@ print file1.history()
 print "\nWith key:"
 print file2.history()
 
+
+#####
+# 5 #
+#####
+
+print "\n\nDownloading a datafile..."
+
+print "\nDefault download:"
+file2.download()
+os.system('ls')
+
+print "\nNamed download:"
+file2.download(filename='foo.xyz')
+os.system('ls')
+
+print "\nVersion download:"
+file2.download(version=1)
+os.system('ls')
+
+
+######
+# 10 #
+######
+
+print "\n\nGetting user details..."
+
+print "\nWithout key:"
+print user1.details()
+
+print "\nWith key:"
+print user2.details()
+
+
+######
+# 11 #
+######
+
+print "\n\nSearching..."
+
+print "\nWithout key:"
+print buzz_search('soccer')
+
+print "\nWith key:"
+print buzz_search('soccer', API)
 
 
 print "\n\n"
