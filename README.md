@@ -1,8 +1,8 @@
 BuzzData-Python-Library
 =======================
 
-Python library for interfacing with the BuzzData API.
+Various libraries for interfacing with the BuzzData API. Python and javascript libraries are planned.
 
-* buzzdata.py: The library code (just one file).
-* example.py: Example code using the library.
+* buzzdata.[py,js]: The library code (just one file).
+* example.[py,js]: Example code using the library.
 
