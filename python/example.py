@@ -3,6 +3,18 @@ import os
 
 from buzzdata import *
 
+##########################################
+##
+## Numbers correspond to the numbering
+##  on the BuzzData API website:
+##  - http://buzzdata.com/faq/api/api-methods
+##
+## The order may be shuffled to accommodate
+##  some of the more dynamic API calls.
+##
+######################
+
+
 #########
 # Setup #
 #########
@@ -89,6 +101,26 @@ os.system('ls')
 print "\nVersion download:"
 file2.download(version=1)
 os.system('ls')
+
+
+#######
+# 7.1 #
+#######
+
+print "\n\nCreating a dataroom..."
+
+(response, room) = DataRoom.create(user2, API, 'buzzlib-test-room', True, 'This is the readme.', 'pdm', ['testing-buzzdata', 'justin-bieber'])
+print "Response:"
+print response
+
+
+
+#####
+# 6 #
+#####
+
+# Coming soon...
+
 
 
 ######

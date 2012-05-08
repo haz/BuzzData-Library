@@ -32,6 +32,19 @@ class DataRoom(API):
         self.dataroom = dataroom
         self.api = api
     
+    @staticmethod
+    def create(user, api, name, public, readme, license, topics):
+        room_details = {'name':name,
+                        'public':{True:'true',False:'false'}[public],
+                        'readme':readme,
+                        'license':license,
+                        'topics':topics}
+        params = {'api_key': api, 'dataset':room_details}
+        url = "https://buzzdata.com/api/%s/datasets" % user
+        room = DataRoom(user, name, api)
+        response = room.post(url, params)
+        return (response, room)
+    
     def details(self):
         params = {}
         if self.api:
@@ -45,6 +58,13 @@ class DataRoom(API):
             params['api_key'] = self.api
         url = "https://buzzdata.com/api/%s/%s/list_datafiles" % (str(self.user), self.dataroom)
         return self.get(url, params)
+    
+    def create_datafile(self, name):
+        if not self.api:
+            return "Error: Must specify an api."
+        params = {'data_file_name': name, 'api_key': self.api}
+        url = "https://buzzdata.com/api/%s/%s/create_datafile" % (str(self.user), self.dataroom)
+        return self.post(url, params)
     
     def __str__(self):
         return self.dataroom
