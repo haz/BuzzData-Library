@@ -4,14 +4,17 @@ import urllib, urllib2, json
 class API:
     def call(self, url, getparams, postparams):
         
-        url += "/?%s" % urllib.urlencode(getparams)
-        post = urllib.urlencode(postparams)
+        if getparams:
+            url += "/?%s" % urllib.urlencode(getparams)
+        post = json.dumps(postparams)
         
         try:
-            if '' == post:
-                return json.load(urllib2.urlopen(url))
+            if postparams:
+                req = urllib2.Request(url)
+                req.add_header('Content-Type', 'application/json')
+                return json.load(urllib2.urlopen(req, post))
             else:
-                return json.load(urllib2.urlopen(url, data=post))
+                return json.load(urllib2.urlopen(url))
         except Exception as e:
             return "Error: %s" % str(e)
     
@@ -35,12 +38,12 @@ class DataRoom(API):
     @staticmethod
     def create(user, api, name, public, readme, license, topics):
         room_details = {'name':name,
-                        'public':{True:'true',False:'false'}[public],
+                        'public':public,
                         'readme':readme,
                         'license':license,
                         'topics':topics}
         params = {'api_key': api, 'dataset':room_details}
-        url = "https://buzzdata.com/api/%s/datasets" % user
+        url = "https://buzzdata.com/api/%s/datasets" % str(user)
         room = DataRoom(user, name, api)
         response = room.post(url, params)
         return (response, room)
