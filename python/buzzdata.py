@@ -23,6 +23,9 @@ class API:
     
     def post(self, url, params):
         return self.call(url, {}, params)
+    
+    def delete(self, url, params):
+        return "Error: DELETE requests are not implemented yet."
 
 class DataRoom(API):
     def __init__(self, user, dataroom, api = None):
@@ -48,6 +51,13 @@ class DataRoom(API):
         response = room.post(url, params)
         return (response, room)
     
+    def destroy(self):
+        if not self.api:
+            return "Error: Must specify an api."
+        params = {'api_key': self.api}
+        url = "https://buzzdata.com/api/%s/%s" % (str(self.user), self.dataroom)
+        return self.delete(url, params)
+    
     def details(self):
         params = {}
         if self.api:
@@ -67,7 +77,9 @@ class DataRoom(API):
             return "Error: Must specify an api."
         params = {'data_file_name': name, 'api_key': self.api}
         url = "https://buzzdata.com/api/%s/%s/create_datafile" % (str(self.user), self.dataroom)
-        return self.post(url, params)
+        response = self.post(url, params)
+        datafile = DataFile(self, response['datafile_uuid'])
+        return (response, datafile)
     
     def __str__(self):
         return self.dataroom
@@ -75,15 +87,15 @@ class DataRoom(API):
     def __repr__(self):
         return self.__str__()
 
-class DataFile(DataRoom):
-    def __init__(self, user, dataroom, uuid, api = None):
-        DataRoom.__init__(self, user, dataroom, api)
+class DataFile(API):
+    def __init__(self, dataroom, uuid):
+        self.dataroom = dataroom
         self.uuid = uuid
     
     def history(self):
         params = {}
-        if self.api:
-            params['api_key'] = self.api
+        if self.dataroom.api:
+            params['api_key'] = self.dataroom.api
         url = "https://buzzdata.com/api/data_files/%s/history" % self.uuid
         return self.get(url, params)
     
@@ -91,9 +103,9 @@ class DataFile(DataRoom):
         params = {}
         if version:
             params['version'] = version
-        if self.api:
-            params['api_key'] = self.api
-        url = "https://buzzdata.com/api/%s/%s/%s/download_request" % (self.user, self.dataroom, self.uuid)
+        if self.dataroom.api:
+            params['api_key'] = self.dataroom.api
+        url = "https://buzzdata.com/api/%s/%s/%s/download_request" % (self.dataroom.user, self.dataroom, self.uuid)
         location = self.post(url, params)['download_request']['url']
         u = urllib2.urlopen(location)
         if not filename:
@@ -103,6 +115,28 @@ class DataFile(DataRoom):
         f = open(filename, 'w')
         f.write(u.read())
         f.close()
+    
+    def upload(self, filename, release_notes):
+        # First we get an upload request
+        if not self.dataroom.api:
+            return "Error: Must specify an api."
+        params = {'api_key':self.dataroom.api, 'datafile_uuid':self.uuid}
+        url = "https://buzzdata.com/api/%s/%s/upload_request" % (self.dataroom.user, self.dataroom)
+        response = self.post(url, params)
+        upload_code = response['upload_request']['upload_code']
+        upload_url = response['upload_request']['url']
+        
+        # Next, get the data we want to upload
+        f = open(filename, 'r')
+        data = f.read()
+        f.close()
+        
+        # Next, we attempt to post the file
+        return json.loads(posturl(upload_url,
+                       [('api_key', self.dataroom.api),
+                        ('upload_code', upload_code),
+                        ('release_notes', release_notes)],
+                       [('file', filename, data)])[1:-1])
 
 class User(API):
     def __init__(self, user, api = None):
@@ -134,3 +168,84 @@ def buzz_search(query, api = None):
     if api:
         params['api_key'] = api
     return API().get('https://buzzdata.com/api/search', params)
+
+def buzz_licenses():
+    return API().get('https://buzzdata.com/api/licenses', {})
+
+def buzz_topics():
+    return API().get('https://buzzdata.com/api/topics', {})
+
+
+
+
+
+
+
+
+
+##################################################
+##                                                              
+##  In order to POST multipart data, the code below was extracted from:
+##  * http://code.activestate.com/recipes/146306-http-client-to-post-using-multipartform-data/
+##
+##  It has been modified with some of the comments to update the library,
+##   as well as HTTPSConnection is used since the only POST requests the
+##   library makes are over https.
+##
+
+
+import httplib, mimetypes, urlparse
+
+def posturl(url, fields, files):
+    urlparts = urlparse.urlsplit(url)
+    return post_multipart(urlparts[1], urlparts[2], fields,files)
+
+
+def post_multipart(host, selector, fields, files):
+    """
+    Post fields and files to an http host as multipart/form-data.
+    fields is a sequence of (name, value) elements for regular form fields.
+    files is a sequence of (name, filename, value) elements for data to be uploaded as files
+    Return the server's response page.
+    """
+    content_type, body = encode_multipart_formdata(fields, files)
+    h = httplib.HTTPSConnection(host)
+    headers = {
+        'User-Agent': 'INSERT USERAGENTNAME',
+        'Content-Type': content_type
+        }
+    h.request('POST', selector, body, headers)
+    res = h.getresponse()
+    return res.read()
+
+
+def encode_multipart_formdata(fields, files):
+    """
+    fields is a sequence of (name, value) elements for regular form fields.
+    files is a sequence of (name, filename, value) elements for data to be uploaded as files
+    Return (content_type, body) ready for httplib.HTTP instance
+    """
+    BOUNDARY = '----------ThIs_Is_tHe_bouNdaRY_$'
+    CRLF = '\r\n'
+    L = []
+    for (key, value) in fields:
+        L.append('--' + BOUNDARY)
+        L.append('Content-Disposition: form-data; name="%s"' % key)
+        L.append('')
+        L.append(value)
+    for (key, filename, value) in files:
+        L.append('--' + BOUNDARY)
+        L.append('Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename))
+        L.append('Content-Type: %s' % get_content_type(filename))
+        L.append('')
+        L.append(value)
+    L.append('--' + BOUNDARY + '--')
+    L.append('')
+    body = CRLF.join(L)
+    content_type = 'multipart/form-data; boundary=%s' % BOUNDARY
+    return content_type, body
+
+def get_content_type(filename):
+    return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
+

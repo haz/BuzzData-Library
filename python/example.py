@@ -27,16 +27,31 @@ user1 = User(USER)
 user2 = User(USER, API)
 room1 = DataRoom(user1, ROOM)
 room2 = DataRoom(user2, ROOM, API)
-file1 = DataFile(user1, ROOM, FILE)
-file2 = DataFile(user1, ROOM, FILE, API)
+file1 = DataFile(room1, FILE)
+file2 = DataFile(room2, FILE)
 
+
+#######
+# 0.1 #
+#######
+
+print "\nGetting the license list..."
+print buzz_licenses()
+
+
+#######
+# 0.2 #
+#######
+
+print "\n\nGetting the topic list..."
+print buzz_topics()
 
 
 #####
 # 1 #
 #####
 
-print "\nGetting dataroom details..."
+print "\n\nGetting dataroom details..."
 
 print "\nWithout key:"
 print room1.details()
@@ -103,23 +118,54 @@ file2.download(version=1)
 os.system('ls')
 
 
+#####
+# 6 #
+###########
+# See 7.2
+##########
+
+
+
 #######
 # 7.1 #
 #######
 
 print "\n\nCreating a dataroom..."
-
 (response, room) = DataRoom.create(user2, API, 'buzzlib-test-room', True, 'This is the readme.', 'pdm', ['testing-buzzdata', 'justin-bieber'])
 print "Response:"
 print response
 
 
+#######
+# 7.2 #
+#######
+print "\n\nCreating a datafile..."
+(response, datafile) = room.create_datafile('test-data-file')
+print "Response:"
+print response
+
+
+#############
+# 7.3 - 7.4 #
+##################################
+# Note that these two API calls
+#  are combined to simplify the
+#  process.
+################
+print "\n\nUploading a new data file..."
+f = open('buzzlib-test.csv', 'w')
+f.write("head1,head2\n1,2\n3,4")
+f.close()
+print datafile.upload('buzzlib-test.csv', 'This is just an example upload.')
+
+
 
 #####
-# 6 #
+# 8 #
 #####
 
-# Coming soon...
+print "\n\nDeleting a dataset..."
+print room.destroy()
 
 
 
