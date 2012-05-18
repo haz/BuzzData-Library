@@ -25,7 +25,10 @@ class API:
         return self.call(url, {}, params)
     
     def delete(self, url, params):
-        return "Error: DELETE requests are not implemented yet."
+        data = json.dumps(params)
+        req = RequestWithMethod(url, method='DELETE', data=data)
+        req.add_header('Content-Type', 'application/json')
+        return json.load(urllib2.urlopen(req))
 
 class DataRoom(API):
     def __init__(self, user, dataroom, api = None):
@@ -249,3 +252,18 @@ def get_content_type(filename):
     return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
 
+##################################################
+##                                                              
+##  In order to send a DELETE request, the code below was extracted from:
+##  * http://stackoverflow.com/questions/4511598/how-to-make-http-delete-method-using-urllib2
+##
+
+class RequestWithMethod(urllib2.Request):
+    def __init__(self, *args, **kwargs):
+        self._method = kwargs.get('method')
+        if self._method:
+            del kwargs['method']
+        urllib2.Request.__init__(self, *args, **kwargs)
+  
+    def get_method(self):
+        return self._method if self._method else super(RequestWithMethod, self).get_method()
