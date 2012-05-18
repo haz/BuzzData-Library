@@ -1,5 +1,5 @@
 
-import os
+import os, time
 
 from buzzdata import *
 
@@ -162,6 +162,13 @@ print datafile.upload('buzzlib-test.csv', 'This is just an example upload.')
 
 #####
 # 8 #
+##############################################
+# This is currently disabled by BuzzData
+###########################
+
+
+#####
+# 9 #
 #####
 
 print "\n\nDeleting a dataset..."
@@ -194,5 +201,52 @@ print buzz_search('soccer')
 print "\nWith key:"
 print buzz_search('soccer', API)
 
+
+######
+# 12 #
+############################################
+# Currently only admins can create users.
+#####################################
+
+
+####################
+##                ##
+##    Staging     ##
+##                ##
+####################
+
+# First create the data set we will modify
+(response, room) = DataRoom.create(user2, API, 'buzzlib-test-room', True, 'This is the readme.', 'pdm', ['testing-buzzdata', 'justin-bieber'])
+(response, datafile) = room.create_datafile('test-data-file')
+datafile.upload('buzzlib-test.csv', 'This is just an example upload.')
+
+######
+# 13 #
+######
+
+print "\n\nCreating a stage..."
+stage = datafile.create_stage()
+print "Stage id: %s" % stage.stage_id
+time.sleep(1)
+
+
+######
+# 14 #
+######
+print "\n\nInserting a few rows..."
+print stage.insert_rows([['5','6'], ['7','8']])
+time.sleep(1)
+
+
+######
+# 17 #
+######
+print "\n\nCommitting the stage..."
+print stage.commit()
+time.sleep(1)
+
+###########################################
+# Finally, destroy the test data room
+print room.destroy()
 
 print "\n\n"

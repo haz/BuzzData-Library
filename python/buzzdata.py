@@ -93,12 +93,13 @@ class DataRoom(API):
 class DataFile(API):
     def __init__(self, dataroom, uuid):
         self.dataroom = dataroom
+        self.api = dataroom.api
         self.uuid = uuid
     
     def history(self):
         params = {}
-        if self.dataroom.api:
-            params['api_key'] = self.dataroom.api
+        if self.api:
+            params['api_key'] = self.api
         url = "https://buzzdata.com/api/data_files/%s/history" % self.uuid
         return self.get(url, params)
     
@@ -106,8 +107,8 @@ class DataFile(API):
         params = {}
         if version:
             params['version'] = version
-        if self.dataroom.api:
-            params['api_key'] = self.dataroom.api
+        if self.api:
+            params['api_key'] = self.api
         url = "https://buzzdata.com/api/%s/%s/%s/download_request" % (self.dataroom.user, self.dataroom, self.uuid)
         location = self.post(url, params)['download_request']['url']
         u = urllib2.urlopen(location)
@@ -121,9 +122,9 @@ class DataFile(API):
     
     def upload(self, filename, release_notes):
         # First we get an upload request
-        if not self.dataroom.api:
+        if not self.api:
             return "Error: Must specify an api."
-        params = {'api_key':self.dataroom.api, 'datafile_uuid':self.uuid}
+        params = {'api_key':self.api, 'datafile_uuid':self.uuid}
         url = "https://buzzdata.com/api/%s/%s/upload_request" % (self.dataroom.user, self.dataroom)
         response = self.post(url, params)
         upload_code = response['upload_request']['upload_code']
@@ -136,10 +137,20 @@ class DataFile(API):
         
         # Next, we attempt to post the file
         return json.loads(posturl(upload_url,
-                       [('api_key', self.dataroom.api),
+                       [('api_key', self.api),
                         ('upload_code', upload_code),
                         ('release_notes', release_notes)],
                        [('file', filename, data)])[1:-1])
+    
+    def create_stage(self):
+        return Stage(self)
+    
+    def __str__(self):
+        return self.uuid
+    
+    def __repr__(self):
+        return self.__str__()
+
 
 class User(API):
     def __init__(self, user, api = None):
@@ -165,6 +176,46 @@ class User(API):
     
     def __repr__(self):
         return self.__str__()
+
+
+class Stage(API):
+    def __init__(self, datafile):
+        self.datafile = datafile
+        self.api = datafile.api
+        self.load_stage()
+    
+    def load_stage(self):
+        if not self.api:
+            return "Error: Must specify an api."
+        params = {'api_key': self.api}
+        url = "https://buzzdata.com/api/%s/%s/%s/stage" % (self.datafile.dataroom.user, self.datafile.dataroom, self.datafile)
+        response = self.post(url, params)
+        self.stage_id = response['id']
+    
+    def insert_rows(self, rows):
+        if not self.api:
+            return "Error: Must specify an api."
+        params = {'datafile_uuid':str(self.datafile),
+                  'stage_id':self.stage_id,
+                  'api_key':self.api,
+                  'rows':rows}
+        url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/rows" % (self.datafile.dataroom.user,
+                                                                   self.datafile.dataroom,
+                                                                   self.datafile,
+                                                                   self.stage_id)
+        return self.post(url, params)
+    
+    def commit(self):
+        if not self.api:
+                    return "Error: Must specify an api."
+        params = {'datafile_uuid':str(self.datafile),
+                  'stage_id':self.stage_id,
+                  'api_key':self.api}
+        url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/commit" % (self.datafile.dataroom.user,
+                                                                   self.datafile.dataroom,
+                                                                   self.datafile,
+                                                                   self.stage_id)
+        return self.post(url, params)
 
 def buzz_search(query, api = None):
     params = {'query':query}
