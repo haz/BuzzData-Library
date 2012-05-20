@@ -1,5 +1,5 @@
 
-import os, time
+import os
 
 from buzzdata import *
 
@@ -154,7 +154,7 @@ print response
 ################
 print "\n\nUploading a new data file..."
 f = open('buzzlib-test.csv', 'w')
-f.write("head1,head2\n1,2\n3,4")
+f.write("head1,head2\n0,0\n1,1")
 f.close()
 print datafile.upload('buzzlib-test.csv', 'This is just an example upload.')
 
@@ -216,37 +216,86 @@ print buzz_search('soccer', API)
 ####################
 
 # First create the data set we will modify
-(response, room) = DataRoom.create(user2, API, 'buzzlib-test-room', True, 'This is the readme.', 'pdm', ['testing-buzzdata', 'justin-bieber'])
-(response, datafile) = room.create_datafile('test-data-file')
-datafile.upload('buzzlib-test.csv', 'This is just an example upload.')
+(response1, room) = DataRoom.create(user2, API, 'buzzlib-test-room', True, 'This is the readme.', 'pdm', ['testing-buzzdata', 'justin-bieber'])
+(response2, datafile) = room.create_datafile('test-data-file')
+response3 = datafile.upload('buzzlib-test.csv', 'This is just an example upload.')
+#print "Newly created dataroom: %s / %s / %s" % (response1, response2, response3)
 
 ######
 # 13 #
-######
-
-print "\n\nCreating a stage..."
-stage = datafile.create_stage()
-print "Stage id: %s" % stage.stage_id
-time.sleep(1)
+##############################
+# See the operations below
+###############
 
 
 ######
 # 14 #
 ######
 print "\n\nInserting a few rows..."
-print stage.insert_rows([['5','6'], ['7','8']])
-time.sleep(1)
+print datafile.insert_rows([['2','2'], ['3','3']])
+#
+################
+# Equivalently #
+################
+#
+#stage = datafile.create_stage()
+#print "Stage id: %s" % stage.stage_id
+#print stage.insert_rows([['2','2'], ['3','3']])
+#print stage.commit()
+
+
+######
+# 15 #
+######
+print "\n\nUpdating a row..."
+print datafile.update_row(['22','22'], 2)
+#
+################
+# Equivalently #
+################
+#
+#stage = datafile.create_stage()
+#print "Stage id: %s" % stage.stage_id
+#print stage.update_row(['22','22'], 2)
+#print stage.commit()
+
+
+######
+# 16 #
+######
+print "\n\nDeleting a row..."
+print datafile.delete_row(1)
+#
+################
+# Equivalently #
+################
+#
+#stage = datafile.create_stage()
+#print "Stage id: %s" % stage.stage_id
+#print stage.delete_row(1)
+#print stage.commit()
 
 
 ######
 # 17 #
+##############################
+# See the operations above
+###############
+
+
 ######
-print "\n\nCommitting the stage..."
-print stage.commit()
-time.sleep(1)
+# 18 #
+######
+print "\n\nRolling back a stage..."
+stage = datafile.create_stage()
+print "Stage id: %s" % stage.stage_id
+print stage.insert_rows([['4','4']])
+print stage.rollback()
 
 ###########################################
 # Finally, destroy the test data room
+#  Comment this line if you want to see
+#  the updated data room on Buzz Data.
 print room.destroy()
 
 print "\n\n"

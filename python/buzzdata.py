@@ -1,5 +1,5 @@
 
-import urllib, urllib2, json
+import urllib, urllib2, json, time
 
 class API:
     def call(self, url, getparams, postparams):
@@ -24,10 +24,27 @@ class API:
     def post(self, url, params):
         return self.call(url, {}, params)
     
+    def www_post(self, url, params):
+        data = urllib.urlencode(params)
+        try:
+            return json.load(urllib2.urlopen(url, data))
+        except Exception as e:
+            return "Error: %s" % str(e)
+    
     def delete(self, url, params):
         data = json.dumps(params)
         req = RequestWithMethod(url, method='DELETE', data=data)
         req.add_header('Content-Type', 'application/json')
+        return json.load(urllib2.urlopen(req))
+    
+    def put(self, url, params, www=False):
+        if www:
+            data = urllib.urlencode(params)
+        else:
+            data = json.dumps(params)
+        req = RequestWithMethod(url, method='PUT', data=data)
+        if not www:
+            req.add_header('Content-Type', 'application/json')
         return json.load(urllib2.urlopen(req))
 
 class DataRoom(API):
@@ -145,6 +162,27 @@ class DataFile(API):
     def create_stage(self):
         return Stage(self)
     
+    def insert_rows(self, rows):
+        stage = self.create_stage()
+        resp = "Stage id: %s" % stage.stage_id
+        resp += "\n" + str(stage.insert_rows(rows))
+        resp += "\n" + str(stage.commit())
+        return resp
+    
+    def update_row(self, row, row_num):
+        stage = self.create_stage()
+        resp = "Stage id: %s" % stage.stage_id
+        resp += "\n" + str(stage.update_row(row, row_num))
+        resp += "\n" + str(stage.commit())
+        return resp
+    
+    def delete_row(self, row_num):
+        stage = self.create_stage()
+        resp = "Stage id: %s" % stage.stage_id
+        resp += "\n" + str(stage.delete_row(row_num))
+        resp += "\n" + str(stage.commit())
+        return resp
+    
     def __str__(self):
         return self.uuid
     
@@ -198,16 +236,39 @@ class Stage(API):
         params = {'datafile_uuid':str(self.datafile),
                   'stage_id':self.stage_id,
                   'api_key':self.api,
-                  'rows':rows}
+                  'rows':json.dumps(rows)}
         url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/rows" % (self.datafile.dataroom.user,
                                                                    self.datafile.dataroom,
                                                                    self.datafile,
                                                                    self.stage_id)
-        return self.post(url, params)
+        return self.www_post(url, params)
+    
+    def update_row(self, row, row_num):
+        if not self.api:
+            return "Error: Must specify an api."
+        params = {'api_key':self.api,
+                  'row':json.dumps(row)}
+        url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/rows/%d" % (self.datafile.dataroom.user,
+                                                                      self.datafile.dataroom,
+                                                                      self.datafile,
+                                                                      self.stage_id,
+                                                                      row_num)
+        return self.put(url, params, True)
+    
+    def delete_row(self, row_num):
+        if not self.api:
+            return "Error: Must specify an api."
+        params = {'api_key':self.api}
+        url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/rows/%d" % (self.datafile.dataroom.user,
+                                                                      self.datafile.dataroom,
+                                                                      self.datafile,
+                                                                      self.stage_id,
+                                                                      row_num)
+        return self.delete(url, params)
     
     def commit(self):
         if not self.api:
-                    return "Error: Must specify an api."
+            return "Error: Must specify an api."
         params = {'datafile_uuid':str(self.datafile),
                   'stage_id':self.stage_id,
                   'api_key':self.api}
@@ -215,6 +276,20 @@ class Stage(API):
                                                                    self.datafile.dataroom,
                                                                    self.datafile,
                                                                    self.stage_id)
+        # Record the response and sleep to avoid server issues
+        resp = self.post(url, params)
+        time.sleep(1)
+        return resp
+    
+    def rollback(self):
+        if not self.api:
+            return "Error: Must specify an api."
+        params = {'datafile_uuid':str(self.datafile),
+                  'api_key':self.api}
+        url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/rollback" % (self.datafile.dataroom.user,
+                                                                       self.datafile.dataroom,
+                                                                       self.datafile,
+                                                                       self.stage_id)
         return self.post(url, params)
 
 def buzz_search(query, api = None):
