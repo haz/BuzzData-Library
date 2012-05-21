@@ -2,8 +2,15 @@
 import urllib, urllib2, json, time
 
 class API:
+    """
+    Class to wrap the RESTful web service calls.
+    """
     def call(self, url, getparams, postparams):
-        
+        """
+        Make a GET or POST call, depending on the supplied
+        parameters, and return the json parsed result. If
+        an error is thrown, that is returned instead.
+        """
         if getparams:
             url += "/?%s" % urllib.urlencode(getparams)
         post = json.dumps(postparams)
@@ -19,12 +26,23 @@ class API:
             return "Error: %s" % str(e)
     
     def get(self, url, params):
+        """
+        Make a GET call with the given parameters.
+        """
         return self.call(url, params, {})
     
     def post(self, url, params):
+        """
+        Make a POST call with the given parameters using
+        json to encode the options.
+        """
         return self.call(url, {}, params)
     
     def www_post(self, url, params):
+        """
+        Make a POST call with the given parameters, but use
+        urlencode for the parameters instead of json encoding.
+        """
         data = urllib.urlencode(params)
         try:
             return json.load(urllib2.urlopen(url, data))
@@ -32,12 +50,21 @@ class API:
             return "Error: %s" % str(e)
     
     def delete(self, url, params):
+        """
+        Make a DELETE call with the given parameters using
+        json to encode the options.
+        """
         data = json.dumps(params)
         req = RequestWithMethod(url, method='DELETE', data=data)
         req.add_header('Content-Type', 'application/json')
         return json.load(urllib2.urlopen(req))
     
     def put(self, url, params, www=False):
+        """
+        Make a DELETE call with the given parameters. If www
+        is set to True, then urlencode is used for the options.
+        Otherwise, json is used.
+        """
         if www:
             data = urllib.urlencode(params)
         else:
@@ -48,8 +75,10 @@ class API:
         return json.load(urllib2.urlopen(req))
 
 class DataRoom(API):
+    """
+    Class that represents a data room.
+    """
     def __init__(self, user, dataroom, api = None):
-        
         if not isinstance(user, User):
             self.user = User(user, api)
         else:
@@ -60,6 +89,19 @@ class DataRoom(API):
     
     @staticmethod
     def create(user, api, name, public, readme, license, topics):
+        """
+        Create a new data room on BuzzData and return the
+        corresponding DataRoom object.
+        
+        Keyword arguments:
+        user    -- User object or username
+        api     -- string of the BuzzData API key
+        name    -- string of the name of the new data room
+        public  -- boolean flag for the data room's privacy
+        readme  -- string of the readme text for the data room
+        license -- string of the license for the data room
+        topics  -- array of topics for the data room
+        """
         room_details = {'name':name,
                         'public':public,
                         'readme':readme,
@@ -72,6 +114,9 @@ class DataRoom(API):
         return (response, room)
     
     def destroy(self):
+        """
+        Delete the data room corresponding to this object.
+        """
         if not self.api:
             return "Error: Must specify an api."
         params = {'api_key': self.api}
@@ -79,6 +124,9 @@ class DataRoom(API):
         return self.delete(url, params)
     
     def details(self):
+        """
+        Fetch the details for the data room.
+        """
         params = {}
         if self.api:
             params['api_key'] = self.api
@@ -86,6 +134,9 @@ class DataRoom(API):
         return self.get(url, params)
     
     def list_datafiles(self):
+        """
+        List the data files for this data room.
+        """
         params = {}
         if self.api:
             params['api_key'] = self.api
@@ -93,6 +144,9 @@ class DataRoom(API):
         return self.get(url, params)
     
     def create_datafile(self, name):
+        """
+        Create a new data file for this data room.
+        """
         if not self.api:
             return "Error: Must specify an api."
         params = {'data_file_name': name, 'api_key': self.api}
@@ -108,12 +162,18 @@ class DataRoom(API):
         return self.__str__()
 
 class DataFile(API):
+    """
+    Class that represents a data file.
+    """
     def __init__(self, dataroom, uuid):
         self.dataroom = dataroom
         self.api = dataroom.api
         self.uuid = uuid
     
     def history(self):
+        """
+        Fetch the history of this data file.
+        """
         params = {}
         if self.api:
             params['api_key'] = self.api
@@ -121,6 +181,17 @@ class DataFile(API):
         return self.get(url, params)
     
     def download(self, version=None, filename=None):
+        """
+        Download a version of this data file.
+        
+        If filename is not provided, the file is named according
+        to <dataroom>.<uuid>.<version>, where <version> is 'head'
+        when no version is provided.
+        
+        Keyword arguments:
+        version  -- integer version of the data file
+        filename -- string of the filename to save to
+        """
         params = {}
         if version:
             params['version'] = version
@@ -138,6 +209,13 @@ class DataFile(API):
         f.close()
     
     def upload(self, filename, release_notes):
+        """
+        Upload a new version of a data file.
+        
+        Keyword arguments:
+        filename      -- string of the filename to upload
+        release_notes -- string of the new file's release notes
+        """
         # First we get an upload request
         if not self.api:
             return "Error: Must specify an api."
@@ -160,9 +238,11 @@ class DataFile(API):
                        [('file', filename, data)])[1:-1])
     
     def create_stage(self):
+        """Create a new Stage object for this data file."""
         return Stage(self)
     
     def insert_rows(self, rows):
+        """Insert new rows to the end of this data file."""
         stage = self.create_stage()
         resp = "Stage id: %s" % stage.stage_id
         resp += "\n" + str(stage.insert_rows(rows))
@@ -170,6 +250,7 @@ class DataFile(API):
         return resp
     
     def update_row(self, row, row_num):
+        """Update a particular row given a row array and number."""
         stage = self.create_stage()
         resp = "Stage id: %s" % stage.stage_id
         resp += "\n" + str(stage.update_row(row, row_num))
@@ -177,6 +258,7 @@ class DataFile(API):
         return resp
     
     def delete_row(self, row_num):
+        """Delete a specific row from the data file."""
         stage = self.create_stage()
         resp = "Stage id: %s" % stage.stage_id
         resp += "\n" + str(stage.delete_row(row_num))
@@ -191,11 +273,17 @@ class DataFile(API):
 
 
 class User(API):
+    """
+    Class that represents a BuzzData user.
+    """
     def __init__(self, user, api = None):
         self.user = user
         self.api = api
     
     def details(self):
+        """
+        Fetch the details for this user.
+        """
         params = {}
         if self.api:
             params['api_key'] = self.api
@@ -203,6 +291,9 @@ class User(API):
         return self.get(url, params)
     
     def list_datarooms(self):
+        """
+        List the data rooms for this user.
+        """
         params = {}
         if self.api:
             params['api_key'] = self.api
@@ -217,12 +308,16 @@ class User(API):
 
 
 class Stage(API):
+    """
+    Class that represents a Stage for updating BuzzData.
+    """
     def __init__(self, datafile):
         self.datafile = datafile
         self.api = datafile.api
         self.load_stage()
     
     def load_stage(self):
+        """Start (load) a new stage for updating."""
         if not self.api:
             return "Error: Must specify an api."
         params = {'api_key': self.api}
@@ -231,6 +326,7 @@ class Stage(API):
         self.stage_id = response['id']
     
     def insert_rows(self, rows):
+        """Insert new rows to the end of this data file."""
         if not self.api:
             return "Error: Must specify an api."
         params = {'datafile_uuid':str(self.datafile),
@@ -244,6 +340,7 @@ class Stage(API):
         return self.www_post(url, params)
     
     def update_row(self, row, row_num):
+        """Update a particular row given a row array and number."""
         if not self.api:
             return "Error: Must specify an api."
         params = {'api_key':self.api,
@@ -256,6 +353,7 @@ class Stage(API):
         return self.put(url, params, True)
     
     def delete_row(self, row_num):
+        """Delete a specific row from the data file."""
         if not self.api:
             return "Error: Must specify an api."
         params = {'api_key':self.api}
@@ -267,6 +365,7 @@ class Stage(API):
         return self.delete(url, params)
     
     def commit(self):
+        """Commit the stage and all changes made."""
         if not self.api:
             return "Error: Must specify an api."
         params = {'datafile_uuid':str(self.datafile),
@@ -282,6 +381,7 @@ class Stage(API):
         return resp
     
     def rollback(self):
+        """Rollback the changes made to this stage."""
         if not self.api:
             return "Error: Must specify an api."
         params = {'datafile_uuid':str(self.datafile),
@@ -293,15 +393,18 @@ class Stage(API):
         return self.post(url, params)
 
 def buzz_search(query, api = None):
+    """Search BuzzData for a particular query."""
     params = {'query':query}
     if api:
         params['api_key'] = api
     return API().get('https://buzzdata.com/api/search', params)
 
 def buzz_licenses():
+    """Fetch the list of BuzzData licenses."""
     return API().get('https://buzzdata.com/api/licenses', {})
 
 def buzz_topics():
+    """Fetch the list of BuzzData topics."""
     return API().get('https://buzzdata.com/api/topics', {})
 
 
