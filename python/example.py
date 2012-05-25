@@ -10,7 +10,11 @@ from buzzdata import *
 ##  - http://buzzdata.com/faq/api/api-methods
 ##
 ## The order may be shuffled to accommodate
-##  some of the more dynamic API calls.
+##  some of the more dynamic API calls. In
+##  order to test all of the functionality,
+##  replace the Setup variables with your
+##  own information, including a ROOM and
+##  FILE that you have write access to.
 ##
 ######################
 
@@ -238,10 +242,9 @@ print datafile.insert_rows([['2','2'], ['3','3']])
 # Equivalently #
 ################
 #
-#stage = datafile.create_stage()
-#print "Stage id: %s" % stage.stage_id
-#print stage.insert_rows([['2','2'], ['3','3']])
-#print stage.commit()
+#datafile.create_stage()
+#print datafile.insert_rows([['2','2'], ['3','3']])
+#print datafile.save()
 
 
 ######
@@ -254,10 +257,9 @@ print datafile.update_row(['22','22'], 2)
 # Equivalently #
 ################
 #
-#stage = datafile.create_stage()
-#print "Stage id: %s" % stage.stage_id
-#print stage.update_row(['22','22'], 2)
-#print stage.commit()
+#datafile.create_stage()
+#print datafile.update_row(['22','22'], 2)
+#print datafile.save()
 
 
 ######
@@ -270,10 +272,9 @@ print datafile.delete_row(1)
 # Equivalently #
 ################
 #
-#stage = datafile.create_stage()
-#print "Stage id: %s" % stage.stage_id
-#print stage.delete_row(1)
-#print stage.commit()
+#datafile.create_stage()
+#print datafile.delete_row(1)
+#print datafile.save()
 
 
 ######
@@ -287,10 +288,11 @@ print datafile.delete_row(1)
 # 18 #
 ######
 print "\n\nRolling back a stage..."
-stage = datafile.create_stage()
-print "Stage id: %s" % stage.stage_id
-print stage.insert_rows([['4','4']])
-print stage.rollback()
+datafile.create_stage()
+print "Stage: %s" % datafile.stage
+print datafile.insert_rows([['4','4']])
+print datafile.rollback()
+print "Stage: %s" % datafile.stage
 
 ###########################################
 # Finally, destroy the test data room

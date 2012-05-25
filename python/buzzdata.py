@@ -169,6 +169,7 @@ class DataFile(API):
         self.dataroom = dataroom
         self.api = dataroom.api
         self.uuid = uuid
+        self.stage = None
     
     def history(self):
         """
@@ -239,30 +240,60 @@ class DataFile(API):
     
     def create_stage(self):
         """Create a new Stage object for this data file."""
-        return Stage(self)
+        if self.stage:
+            return "Error: Data file already has a stage."
+        self.stage = Stage(self)
+    
+    def save(self):
+        """Save the changes made to the current stage so far."""
+        if not self.stage:
+            return "Error: Data file does not currently have a stage."
+        resp = self.stage.commit()
+        self.stage = None
+        return resp
+    
+    def rollback(self):
+        """Roll back any changes made to the data file so far."""
+        if not self.stage:
+            return "Error: Data file does not currently have a stage."
+        resp = self.stage.rollback()
+        self.stage = None
+        return resp
     
     def insert_rows(self, rows):
         """Insert new rows to the end of this data file."""
-        stage = self.create_stage()
-        resp = "Stage id: %s" % stage.stage_id
-        resp += "\n" + str(stage.insert_rows(rows))
-        resp += "\n" + str(stage.commit())
+        commit = False
+        if not self.stage:
+            self.create_stage()
+            commit = True
+        resp = "Stage id: %s" % self.stage.stage_id
+        resp += "\n" + str(self.stage.insert_rows(rows))
+        if commit:
+            resp += "\n" + str(self.stage.commit())
         return resp
     
     def update_row(self, row, row_num):
         """Update a particular row given a row array and number."""
-        stage = self.create_stage()
-        resp = "Stage id: %s" % stage.stage_id
-        resp += "\n" + str(stage.update_row(row, row_num))
-        resp += "\n" + str(stage.commit())
+        commit = False
+        if not self.stage:
+            self.create_stage()
+            commit = True
+        resp = "Stage id: %s" % self.stage.stage_id
+        resp += "\n" + str(self.stage.update_row(row, row_num))
+        if commit:
+            resp += "\n" + str(self.stage.commit())
         return resp
     
     def delete_row(self, row_num):
         """Delete a specific row from the data file."""
-        stage = self.create_stage()
-        resp = "Stage id: %s" % stage.stage_id
-        resp += "\n" + str(stage.delete_row(row_num))
-        resp += "\n" + str(stage.commit())
+        commit = False
+        if not self.stage:
+            self.create_stage()
+            commit = True
+        resp = "Stage id: %s" % self.stage.stage_id
+        resp += "\n" + str(self.stage.delete_row(row_num))
+        if commit:
+            resp += "\n" + str(self.stage.commit())
         return resp
     
     def __str__(self):
@@ -391,6 +422,12 @@ class Stage(API):
                                                                        self.datafile,
                                                                        self.stage_id)
         return self.post(url, params)
+    
+    def __str__(self):
+        return self.stage_id
+    
+    def __repr__(self):
+        return self.__str__()
 
 def buzz_search(query, api = None):
     """Search BuzzData for a particular query."""
@@ -483,7 +520,7 @@ def get_content_type(filename):
 
 ##################################################
 ##                                                              
-##  In order to send a DELETE request, the code below was extracted from:
+##  In order to send PUT and DELETE requests, the code below was extracted from:
 ##  * http://stackoverflow.com/questions/4511598/how-to-make-http-delete-method-using-urllib2
 ##
 
