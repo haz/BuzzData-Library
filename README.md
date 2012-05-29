@@ -1,4 +1,4 @@
-BuzzData-Python-Library
+BuzzData-Library
 =======================
 
 Various libraries for interfacing with the BuzzData API. Python and javascript libraries are planned.
