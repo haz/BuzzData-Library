@@ -78,7 +78,7 @@ class DataRoom(API):
     """
     Class that represents a data room.
     """
-    def __init__(self, user, dataroom, api = None):
+    def __init__(self, user, dataroom, api = None, hive = ''):
         if not isinstance(user, User):
             self.user = User(user, api)
         else:
@@ -86,9 +86,13 @@ class DataRoom(API):
         
         self.dataroom = dataroom
         self.api = api
+        self.hive = hive
+        
+        if hive:
+            self.hive += '.'
     
     @staticmethod
-    def create(user, api, name, public, readme, license, topics):
+    def create(user, api, name, public, readme, license, topics, hive = ''):
         """
         Create a new data room on BuzzData and return the
         corresponding DataRoom object.
@@ -101,6 +105,7 @@ class DataRoom(API):
         readme  -- string of the readme text for the data room
         license -- string of the license for the data room
         topics  -- array of topics for the data room
+        hive    -- name of the hive for the data room
         """
         room_details = {'name':name,
                         'public':public,
@@ -108,7 +113,9 @@ class DataRoom(API):
                         'license':license,
                         'topics':topics}
         params = {'api_key': api, 'dataset':room_details}
-        url = "https://buzzdata.com/api/%s/datasets" % str(user)
+        if hive:
+            hive += '.'
+        url = "https://%sbuzzdata.com/api/%s/datasets" % (hive, str(user))
         room = DataRoom(user, name, api)
         response = room.post(url, params)
         return (response, room)
@@ -120,7 +127,7 @@ class DataRoom(API):
         if not self.api:
             return "Error: Must specify an api."
         params = {'api_key': self.api}
-        url = "https://buzzdata.com/api/%s/%s" % (str(self.user), self.dataroom)
+        url = "https://%sbuzzdata.com/api/%s/%s" % (self.hive, str(self.user), self.dataroom)
         return self.delete(url, params)
     
     def details(self):
@@ -130,7 +137,7 @@ class DataRoom(API):
         params = {}
         if self.api:
             params['api_key'] = self.api
-        url = "https://buzzdata.com/api/%s/%s" % (str(self.user), self.dataroom)
+        url = "https://%sbuzzdata.com/api/%s/%s" % (self.hive, str(self.user), self.dataroom)
         return self.get(url, params)
     
     def list_datafiles(self):
@@ -140,7 +147,7 @@ class DataRoom(API):
         params = {}
         if self.api:
             params['api_key'] = self.api
-        url = "https://buzzdata.com/api/%s/%s/list_datafiles" % (str(self.user), self.dataroom)
+        url = "https://%sbuzzdata.com/api/%s/%s/list_datafiles" % (self.hive, str(self.user), self.dataroom)
         return self.get(url, params)
     
     def create_datafile(self, name):
@@ -150,7 +157,7 @@ class DataRoom(API):
         if not self.api:
             return "Error: Must specify an api."
         params = {'data_file_name': name, 'api_key': self.api}
-        url = "https://buzzdata.com/api/%s/%s/create_datafile" % (str(self.user), self.dataroom)
+        url = "https://%sbuzzdata.com/api/%s/%s/create_datafile" % (self.hive, str(self.user), self.dataroom)
         
         response = self.post(url, params)
         if 'datafile_uuid' not in response:
@@ -172,6 +179,7 @@ class DataFile(API):
     def __init__(self, dataroom, uuid):
         self.dataroom = dataroom
         self.api = dataroom.api
+        self.hive = dataroom.hive
         self.uuid = uuid
         self.stage = None
     
@@ -182,7 +190,7 @@ class DataFile(API):
         params = {}
         if self.api:
             params['api_key'] = self.api
-        url = "https://buzzdata.com/api/data_files/%s/history" % self.uuid
+        url = "https://%sbuzzdata.com/api/data_files/%s/history" % (self.hive, self.uuid)
         return self.get(url, params)
     
     def download(self, version=None, filename=None):
@@ -202,7 +210,7 @@ class DataFile(API):
             params['version'] = version
         if self.api:
             params['api_key'] = self.api
-        url = "https://buzzdata.com/api/%s/%s/%s/download_request" % (self.dataroom.user, self.dataroom, self.uuid)
+        url = "https://%sbuzzdata.com/api/%s/%s/%s/download_request" % (self.hive, self.dataroom.user, self.dataroom, self.uuid)
         location = self.post(url, params)['download_request']['url']
         u = urllib2.urlopen(location)
         if not filename:
@@ -225,7 +233,7 @@ class DataFile(API):
         if not self.api:
             return "Error: Must specify an api."
         params = {'api_key':self.api, 'datafile_uuid':self.uuid}
-        url = "https://buzzdata.com/api/%s/%s/upload_request" % (self.dataroom.user, self.dataroom)
+        url = "https://%sbuzzdata.com/api/%s/%s/upload_request" % (self.hive, self.dataroom.user, self.dataroom)
         response = self.post(url, params)
         upload_code = response['upload_request']['upload_code']
         upload_url = response['upload_request']['url']
@@ -311,9 +319,13 @@ class User(API):
     """
     Class that represents a BuzzData user.
     """
-    def __init__(self, user, api = None):
+    def __init__(self, user, api = None, hive = ''):
         self.user = user
         self.api = api
+        self.hive = hive
+        
+        if hive:
+            self.hive += '.'
     
     def details(self):
         """
@@ -322,7 +334,7 @@ class User(API):
         params = {}
         if self.api:
             params['api_key'] = self.api
-        url = "https://buzzdata.com/api/%s" % self.user
+        url = "https://%sbuzzdata.com/api/%s" % (self.hive, self.user)
         return self.get(url, params)
     
     def list_datarooms(self):
@@ -332,7 +344,7 @@ class User(API):
         params = {}
         if self.api:
             params['api_key'] = self.api
-        url = "https://buzzdata.com/api/%s/datasets/list" % self.user
+        url = "https://%sbuzzdata.com/api/%s/datasets/list" % (self.hive, self.user)
         return self.get(url, params)
     
     def __str__(self):
@@ -349,6 +361,7 @@ class Stage(API):
     def __init__(self, datafile):
         self.datafile = datafile
         self.api = datafile.api
+        self.hive = datafile.hive
         self.load_stage()
     
     def load_stage(self):
@@ -356,7 +369,7 @@ class Stage(API):
         if not self.api:
             return "Error: Must specify an api."
         params = {'api_key': self.api}
-        url = "https://buzzdata.com/api/%s/%s/%s/stage" % (self.datafile.dataroom.user, self.datafile.dataroom, self.datafile)
+        url = "https://%sbuzzdata.com/api/%s/%s/%s/stage" % (self.hive, self.datafile.dataroom.user, self.datafile.dataroom, self.datafile)
         response = self.post(url, params)
         self.stage_id = response['id']
     
@@ -368,10 +381,11 @@ class Stage(API):
                   'stage_id':self.stage_id,
                   'api_key':self.api,
                   'rows':json.dumps(rows)}
-        url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/rows" % (self.datafile.dataroom.user,
-                                                                   self.datafile.dataroom,
-                                                                   self.datafile,
-                                                                   self.stage_id)
+        url = "https://%sbuzzdata.com/api/%s/%s/%s/stage/%s/rows" % (self.hive,
+                                                                     self.datafile.dataroom.user,
+                                                                     self.datafile.dataroom,
+                                                                     self.datafile,
+                                                                     self.stage_id)
         return self.www_post(url, params)
     
     def update_row(self, row, row_num):
@@ -380,11 +394,12 @@ class Stage(API):
             return "Error: Must specify an api."
         params = {'api_key':self.api,
                   'row':json.dumps(row)}
-        url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/rows/%d" % (self.datafile.dataroom.user,
-                                                                      self.datafile.dataroom,
-                                                                      self.datafile,
-                                                                      self.stage_id,
-                                                                      row_num)
+        url = "https://%sbuzzdata.com/api/%s/%s/%s/stage/%s/rows/%d" % (self.hive,
+                                                                        self.datafile.dataroom.user,
+                                                                        self.datafile.dataroom,
+                                                                        self.datafile,
+                                                                        self.stage_id,
+                                                                        row_num)
         return self.put(url, params, True)
     
     def delete_row(self, row_num):
@@ -392,11 +407,12 @@ class Stage(API):
         if not self.api:
             return "Error: Must specify an api."
         params = {'api_key':self.api}
-        url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/rows/%d" % (self.datafile.dataroom.user,
-                                                                      self.datafile.dataroom,
-                                                                      self.datafile,
-                                                                      self.stage_id,
-                                                                      row_num)
+        url = "https://%sbuzzdata.com/api/%s/%s/%s/stage/%s/rows/%d" % (self.hive,
+                                                                        self.datafile.dataroom.user,
+                                                                        self.datafile.dataroom,
+                                                                        self.datafile,
+                                                                        self.stage_id,
+                                                                        row_num)
         return self.delete(url, params)
     
     def commit(self):
@@ -406,10 +422,11 @@ class Stage(API):
         params = {'datafile_uuid':str(self.datafile),
                   'stage_id':self.stage_id,
                   'api_key':self.api}
-        url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/commit" % (self.datafile.dataroom.user,
-                                                                   self.datafile.dataroom,
-                                                                   self.datafile,
-                                                                   self.stage_id)
+        url = "https://%sbuzzdata.com/api/%s/%s/%s/stage/%s/commit" % (self.hive,
+                                                                       self.datafile.dataroom.user,
+                                                                       self.datafile.dataroom,
+                                                                       self.datafile,
+                                                                       self.stage_id)
         # Record the response and sleep to avoid server issues
         resp = self.post(url, params)
         time.sleep(1)
@@ -421,10 +438,11 @@ class Stage(API):
             return "Error: Must specify an api."
         params = {'datafile_uuid':str(self.datafile),
                   'api_key':self.api}
-        url = "https://buzzdata.com/api/%s/%s/%s/stage/%s/rollback" % (self.datafile.dataroom.user,
-                                                                       self.datafile.dataroom,
-                                                                       self.datafile,
-                                                                       self.stage_id)
+        url = "https://%sbuzzdata.com/api/%s/%s/%s/stage/%s/rollback" % (self.hive,
+                                                                         self.datafile.dataroom.user,
+                                                                         self.datafile.dataroom,
+                                                                         self.datafile,
+                                                                         self.stage_id)
         return self.post(url, params)
     
     def __str__(self):
@@ -433,20 +451,32 @@ class Stage(API):
     def __repr__(self):
         return self.__str__()
 
-def buzz_search(query, api = None):
+def buzz_search(query, api = None, hive = ''):
     """Search BuzzData for a particular query."""
     params = {'query':query}
     if api:
         params['api_key'] = api
-    return API().get('https://buzzdata.com/api/search', params)
+    if hive:
+        hive += '.'
+    return API().get("https://%sbuzzdata.com/api/search" % hive, params)
 
-def buzz_licenses():
+def buzz_licenses(api = None, hive = ''):
     """Fetch the list of BuzzData licenses."""
-    return API().get('https://buzzdata.com/api/licenses', {})
+    params = {}
+    if api:
+        params['api_key'] = api
+    if hive:
+        hive += '.'
+    return API().get("https://%sbuzzdata.com/api/licenses" % hive, params)
 
-def buzz_topics():
+def buzz_topics(api = None, hive = ''):
     """Fetch the list of BuzzData topics."""
-    return API().get('https://buzzdata.com/api/topics', {})
+    params = {}
+    if api:
+        params['api_key'] = api
+    if hive:
+        hive += '.'
+    return API().get("https://%sbuzzdata.com/api/topics" % hive, params)
 
 
 
