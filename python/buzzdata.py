@@ -151,7 +151,11 @@ class DataRoom(API):
             return "Error: Must specify an api."
         params = {'data_file_name': name, 'api_key': self.api}
         url = "https://buzzdata.com/api/%s/%s/create_datafile" % (str(self.user), self.dataroom)
+        
         response = self.post(url, params)
+        if 'datafile_uuid' not in response:
+            return ("Error: Bad response -- %s" % str(response), None)
+        
         datafile = DataFile(self, response['datafile_uuid'])
         return (response, datafile)
     
