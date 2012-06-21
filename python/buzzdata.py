@@ -282,6 +282,7 @@ class DataFile(API):
         resp += "\n" + str(self.stage.insert_rows(rows))
         if commit:
             resp += "\n" + str(self.stage.commit())
+            self.stage = None
         return resp
     
     def update_row(self, row, row_num):
@@ -294,6 +295,7 @@ class DataFile(API):
         resp += "\n" + str(self.stage.update_row(row, row_num))
         if commit:
             resp += "\n" + str(self.stage.commit())
+            self.stage = None
         return resp
     
     def delete_row(self, row_num):
@@ -306,6 +308,7 @@ class DataFile(API):
         resp += "\n" + str(self.stage.delete_row(row_num))
         if commit:
             resp += "\n" + str(self.stage.commit())
+            self.stage = None
         return resp
     
     def __str__(self):
