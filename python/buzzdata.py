@@ -23,7 +23,7 @@ class API:
             else:
                 return json.load(urllib2.urlopen(url))
         except Exception as e:
-            return "Error: %s" % str(e)
+            return "Error: %s (%s)" % (str(e), str(e.readlines()))
     
     def get(self, url, params):
         """
@@ -425,8 +425,8 @@ class Stage(API):
                                                                        self.datafile,
                                                                        self.stage_id)
         # Record the response and sleep to avoid server issues
-        resp = self.post(url, params)
         time.sleep(1)
+        resp = self.post(url, params)
         return resp
     
     def rollback(self):
