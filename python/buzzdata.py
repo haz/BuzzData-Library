@@ -450,7 +450,7 @@ class Stage(API):
 
 def buzz_search(query, api = None, hive = ''):
     """Search BuzzData for a particular query."""
-    params = {'query':query}
+    params = {'term':query}
     if api:
         params['api_key'] = api
     if hive:
