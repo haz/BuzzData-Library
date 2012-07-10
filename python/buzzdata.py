@@ -78,7 +78,7 @@ class DataRoom(API):
     """
     Class that represents a data room.
     """
-    def __init__(self, user, dataroom, api = None, hive = ''):
+    def __init__(self, user, dataroom, api = None):
         if not isinstance(user, User):
             self.user = User(user, api)
         else:
@@ -86,13 +86,10 @@ class DataRoom(API):
         
         self.dataroom = dataroom
         self.api = api
-        self.hive = hive
-        
-        if hive:
-            self.hive += '.'
+        self.hive = user.hive
     
     @staticmethod
-    def create(user, api, name, public, readme, license, topics, hive = ''):
+    def create(user, api, name, public, readme, license, topics):
         """
         Create a new data room on BuzzData and return the
         corresponding DataRoom object.
@@ -105,7 +102,6 @@ class DataRoom(API):
         readme  -- string of the readme text for the data room
         license -- string of the license for the data room
         topics  -- array of topics for the data room
-        hive    -- name of the hive for the data room
         """
         room_details = {'name':name,
                         'public':public,
@@ -113,9 +109,7 @@ class DataRoom(API):
                         'license':license,
                         'topics':topics}
         params = {'api_key': api, 'dataset':room_details}
-        if hive:
-            hive += '.'
-        url = "https://%sbuzzdata.com/api/%s/datasets" % (hive, str(user))
+        url = "https://%sbuzzdata.com/api/%s/datasets" % (user.hive, str(user))
         room = DataRoom(user, name, api)
         response = room.post(url, params)
         return (response, room)
