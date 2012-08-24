@@ -23,7 +23,10 @@ class API:
             else:
                 return json.load(urllib2.urlopen(url))
         except Exception as e:
-            return "Error: %s (%s)" % (str(e), str(e.readlines()))
+            if isinstance(e, urllib2.URLError):
+                return "Error: %s (readlines not possible)" % str(e)
+            else:
+                return "Error: %s (%s)" % (str(e), str(e.readlines()))
     
     def get(self, url, params):
         """
